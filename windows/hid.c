@@ -122,6 +122,8 @@ extern "C" {
 
 	static HMODULE lib_handle = NULL;
 	static BOOLEAN initialized = FALSE;
+	static wchar_t gs_last_error[1024];
+
 #endif /* HIDAPI_USE_DDK */
 
 struct hid_device_ {
@@ -190,6 +192,8 @@ static void register_error(hid_device *device, const char *op)
 	   the hid_error() function can pick it up. */
 	LocalFree(device->last_error_str);
 	device->last_error_str = msg;
+	wcsncpy(gs_last_error,msg,1023);
+	gs_last_error[1023]=0;
 }
 
 #ifndef HIDAPI_USE_DDK
@@ -222,7 +226,9 @@ static HANDLE open_device(const char *path, BOOL enumerate)
 {
 	HANDLE handle;
 	DWORD desired_access = (enumerate)? 0: (GENERIC_WRITE | GENERIC_READ);
-	DWORD share_mode = FILE_SHARE_READ|FILE_SHARE_WRITE;
+	DWORD share_mode = (enumerate)?
+	                      FILE_SHARE_READ|FILE_SHARE_WRITE:
+	                      FILE_SHARE_READ;
 
 	handle = CreateFileA(path,
 		desired_access,
@@ -232,6 +238,18 @@ static HANDLE open_device(const char *path, BOOL enumerate)
 		FILE_FLAG_OVERLAPPED,/*FILE_ATTRIBUTE_NORMAL,*/
 		0);
 
+	if (!(enumerate) && handle == INVALID_HANDLE_VALUE) {
+		/* Couldn't open the device. On Windows 10 seems that windows
+		   itself opens the device with write sharing enabled - so retry
+		   with same share mode */
+		handle = CreateFileA(path,
+			desired_access,
+			share_mode|FILE_SHARE_WRITE,
+			NULL,
+			OPEN_EXISTING,
+			FILE_FLAG_OVERLAPPED,/*FILE_ATTRIBUTE_NORMAL,*/
+			0);
+	}
 	return handle;
 }
 
@@ -239,6 +257,7 @@ int HID_API_EXPORT hid_init(void)
 {
 #ifndef HIDAPI_USE_DDK
 	if (!initialized) {
+		gs_last_error[0]=0;
 		if (lookup_functions() < 0) {
 			hid_exit();
 			return -1;
@@ -865,6 +884,10 @@ HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device *dev)
 	return (wchar_t*)dev->last_error_str;
 }
 
+HID_API_EXPORT const wchar_t* HID_API_CALL hid_last_error()
+{
+	return &gs_last_error[0];
+}
 
 /*#define PICPGM*/
 /*#define S11*/

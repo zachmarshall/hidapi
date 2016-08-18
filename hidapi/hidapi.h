@@ -383,6 +383,8 @@ extern "C" {
 		*/
 		HID_API_EXPORT const wchar_t* HID_API_CALL hid_error(hid_device *device);
 
+		HID_API_EXPORT const wchar_t* HID_API_CALL hid_last_error();
+
 #ifdef __cplusplus
 }
 #endif
