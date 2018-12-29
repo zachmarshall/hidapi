@@ -30,8 +30,13 @@
 #include <wchar.h>
 
 #ifdef _WIN32
+#ifdef HID_API_EXPORTS
       #define HID_API_EXPORT __declspec(dllexport)
       #define HID_API_CALL
+#else
+    #define HID_API_EXPORT /**< API export macro */
+    #define HID_API_CALL /**< API call macro */
+#endif
 #else
       #define HID_API_EXPORT /**< API export macro */
       #define HID_API_CALL /**< API call macro */
