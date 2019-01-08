@@ -540,6 +540,63 @@ hid_device * HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short pr
 	return handle;
 }
 
+const char * match_usage(struct hid_device_info * cur_dev, unsigned short usage_page, unsigned short usage) {
+	/* This function is identical to the Linux version. Platform independent. */
+	if (0 != usage_page) {
+		if (usage_page == cur_dev->usage_page) {
+			if (0 != usage) {
+				if (usage == cur_dev->usage) {
+					return cur_dev->path;
+				}
+			} else {
+				return cur_dev->path;
+			}
+		}
+	} else {
+		return cur_dev->path;
+	}
+	return NULL;
+}
+
+hid_device * HID_API_EXPORT hid_open_usage(unsigned short vendor_id, unsigned short product_id, const wchar_t *serial_number, unsigned short usage_page, unsigned short usage) {
+	/* This function is identical to the Linux version. Platform independent. */
+	struct hid_device_info *devs, *cur_dev;
+	const char *path_to_open = NULL;
+	hid_device * handle = NULL;
+
+	devs = hid_enumerate(vendor_id, product_id);
+	cur_dev = devs;
+	while (cur_dev) {
+		if (cur_dev->vendor_id == vendor_id &&
+		    cur_dev->product_id == product_id) {
+			if (serial_number) {
+				if (wcscmp(serial_number, cur_dev->serial_number) == 0) {
+					path_to_open = match_usage(cur_dev, usage_page, usage);
+					if (NULL != path_to_open) {
+						break;
+					}
+				}
+			}
+			else {
+				path_to_open = match_usage(cur_dev, usage_page, usage);
+				if (NULL != path_to_open) {
+					break;
+				}
+			}
+		}
+		cur_dev = cur_dev->next;
+	}
+
+	if (path_to_open) {
+		/* Open the device */
+		handle = hid_open_path(path_to_open);
+	}
+
+	hid_free_enumeration(devs);
+
+	return handle;
+}
+
 static void hid_device_removal_callback(void *context, IOReturn result,
                                         void *sender)
 {

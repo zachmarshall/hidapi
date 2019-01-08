@@ -164,6 +164,19 @@ extern "C" {
 		*/
 		HID_API_EXPORT hid_device * HID_API_CALL hid_open(unsigned short vendor_id, unsigned short product_id, const wchar_t *serial_number);
 
+		/** @brief Open HID device using Vendor ID (VID), Product ID (PID), optionally serial number, optionally usage page, optionally usage
+
+			If @p serial_number is NULL, the first device with the
+			specified VID and PID and matching usage (see below) is opened.
+
+			If @p usage_page is 0, the first device with matching VID, PID, and serial is opened,
+			and usage is ignored.
+
+			If @p usage is 0, the first device with matching VID, PID, serial number, and usage page
+			is opened.
+		*/
+		HID_API_EXPORT hid_device * HID_API_CALL hid_open_usage(unsigned short vendor_id, unsigned short product_id, const wchar_t *serial_number, unsigned short usage_page, unsigned short usage);
+
 		/** @brief Open a HID device by its path name.
 
 			The path name be determined by calling hid_enumerate(), or a
